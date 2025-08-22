@@ -1,9 +1,6 @@
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Statistics {
     private long totalTraffic;
@@ -15,6 +12,8 @@ public class Statistics {
     //Курсовой проект. Задание #2 по теме "Collections"
     private Set<String> notFoundPages;
     private Map<String, Integer> browserCounts;
+    //Курсовой проект. Задание #1 по теме "Stream API"
+    private List<LogEntry> allEntries = new ArrayList<>();
 
     public Statistics() {
         this.totalTraffic = 0L;
@@ -26,6 +25,8 @@ public class Statistics {
         //Курсовой проект. Задание #2 по теме "Collections"
         this.notFoundPages = new HashSet<>();
         this.browserCounts = new HashMap<>();
+        //Курсовой проект. Задание #1 по теме "Stream API"
+        this.allEntries = new ArrayList<>();
     }
 
     public void addEntry(LogEntry entry) {
@@ -33,6 +34,10 @@ public class Statistics {
         if (entryTime == null) {
             return;
         }
+
+//Курсовой проект. Задание #1 по теме "Stream API"
+        allEntries.add(entry);
+
         if (minTime == null || entryTime.isBefore(minTime)) {
             minTime = entryTime;
         }
@@ -44,13 +49,13 @@ public class Statistics {
             this.totalTraffic += responseSize;
         }
         //Курсовой проект. Задание #1 по теме "Collections"
-        if (entry.getResponseCode() == 200){
+        if (entry.getResponseCode() == 200) {
             existingPages.add(entry.getPath());
         }
         String os = entry.getAgent().getOs();
         osCounts.put(os, osCounts.getOrDefault(os, 0) + 1);
         //Курсовой проект. Задание #2 по теме "Collections"
-        if (entry.getResponseCode() == 404){
+        if (entry.getResponseCode() == 404) {
             notFoundPages.add(entry.getPath());
         }
         String browser = entry.getAgent().getBrowser();
@@ -65,10 +70,10 @@ public class Statistics {
     public Map<String, Double> getOsStatistics() {
         Map<String, Double> osStatistics = new HashMap<>();
         int totalCount = 0;
-        for (int count: osCounts.values()) {
+        for (int count : osCounts.values()) {
             totalCount += count;
         }
-        if (totalCount > 0){
+        if (totalCount > 0) {
             for (Map.Entry<String, Integer> entry : osCounts.entrySet()) {
                 double share = (double) entry.getValue() / totalCount;
                 osStatistics.put(entry.getKey(), share);
@@ -76,6 +81,7 @@ public class Statistics {
         }
         return osStatistics;
     }
+
     //Курсовой проект. Задание #2 по теме "Collections"
     public Set<String> getNotFoundPages() {
         return new HashSet<>(notFoundPages);
@@ -84,10 +90,10 @@ public class Statistics {
     public Map<String, Double> getBrowserStatistics() {
         Map<String, Double> browserStatistics = new HashMap<>();
         int totalCount = 0;
-        for (int count: browserCounts.values()) {
+        for (int count : browserCounts.values()) {
             totalCount += count;
         }
-        if (totalCount > 0){
+        if (totalCount > 0) {
             for (Map.Entry<String, Integer> entry : browserCounts.entrySet()) {
                 double share = (double) entry.getValue() / totalCount;
                 browserStatistics.put(entry.getKey(), share);
@@ -124,6 +130,61 @@ public class Statistics {
         Duration duration = Duration.between(minTime, maxTime);
         double hours = duration.toMinutes() / 60.0;
         return String.format("%.2f", hours);
+    }
+
+    //Курсовой проект. Задание #1 по теме "Stream API"
+    public double getAverageVisitsPerHour(){
+        if (minTime == null || maxTime == null || minTime.equals(maxTime)) {
+            return 0;
+        }
+        long nonBotCount = allEntries.stream()
+                .filter(entry -> !entry.getAgent().isBot())
+                .count();
+        Duration duration = Duration.between(minTime, maxTime);
+        double hoursBetween = duration.toHours();
+        if (hoursBetween == 0) {
+            hoursBetween = 1;
+        }
+        return (double) nonBotCount / hoursBetween;
+    }
+
+    public double getAverageErrorRequestsPerHour(){
+        if (minTime == null || maxTime == null || minTime.equals(maxTime)) {
+            return 0;
+        }
+        long errorCount = allEntries.stream()
+                .filter(entry -> entry.getResponseCode() >= 400 && entry.getResponseCode() < 600)
+                .count();
+        Duration duration = Duration.between(minTime, maxTime);
+        double hoursBetween = duration.toHours();
+        if (hoursBetween == 0) {
+            hoursBetween = 1;
+        }
+        return (double) errorCount / hoursBetween;
+    }
+
+    public double getAverageVisitsPerUser(){
+        long nonBotVisits = allEntries.stream()
+                .filter(entry -> !entry.getAgent().isBot())
+                .count();
+        long uniqueNonBotIps = allEntries.stream()
+                .filter(entry -> !entry.getAgent().isBot())
+                .map(entry -> entry.getIpAddr())
+                .distinct()
+                .count();
+        if (uniqueNonBotIps == 0) {
+            return 0;
+        }
+        return (double) nonBotVisits / uniqueNonBotIps;
+    }
+    public String getFormattedAverageVisitsPerHour(){
+        return String.format("%,.2f", getAverageVisitsPerHour());
+    }
+    public String getFormattedAverageErrorRequestsPerHour(){
+        return String.format("%,.2f", getAverageErrorRequestsPerHour());
+    }
+    public String getFormattedAverageVisitsPerUser(){
+        return String.format("%,.2f", getAverageVisitsPerUser());
     }
 
     public LocalDateTime getMinTime() {

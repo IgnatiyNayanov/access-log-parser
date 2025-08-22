@@ -72,6 +72,9 @@ public class Main {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            System.out.println("Среднее количество посещений в час: " + stats.getFormattedAverageVisitsPerHour());
+            System.out.println("Среднее количество ошибок в час: " + stats.getFormattedAverageErrorRequestsPerHour());
+            System.out.println("Средняя посещаемость на пользователя: " + stats.getFormattedAverageVisitsPerUser());
         }
 
 

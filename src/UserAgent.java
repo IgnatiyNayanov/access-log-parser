@@ -3,15 +3,20 @@ import java.util.Locale;
 public class UserAgent {
     private final String browser;
     private final String os;
+    //Курсовой проект. Задание #1 по теме "Stream API"
+    private final boolean isBot;
 
     public UserAgent(String userAgentString) {
         if (userAgentString == null || userAgentString.isEmpty() || userAgentString.equals("-")) {
             this.browser = "Unknown";
             this.os = "Unknown";
+            this.isBot = false;
             return;
         }
         this.os = parseOS(userAgentString);
         this.browser = parseBrowser(userAgentString);
+        //Курсовой проект. Задание #1 по теме "Stream API"
+        this.isBot = userAgentString.toLowerCase().contains("bot");
     }
 
     private String parseOS(String userAgent) {
@@ -50,6 +55,13 @@ public class UserAgent {
         {
             return "Unknown";
         }
+    }
+
+    //Курсовой проект. Задание #1 по теме "Stream API"
+
+
+    public boolean isBot() {
+        return isBot;
     }
 
     public String getBrowser() {
