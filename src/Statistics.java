@@ -12,6 +12,9 @@ public class Statistics {
     //Курсовой проект. Задание #1 по теме "Collections"
     private Set<String> existingPages;
     private Map<String, Integer> osCounts;
+    //Курсовой проект. Задание #2 по теме "Collections"
+    private Set<String> notFoundPages;
+    private Map<String, Integer> browserCounts;
 
     public Statistics() {
         this.totalTraffic = 0L;
@@ -20,6 +23,9 @@ public class Statistics {
         //Курсовой проект. Задание #1 по теме "Collections"
         this.existingPages = new HashSet<>();
         this.osCounts = new HashMap<>();
+        //Курсовой проект. Задание #2 по теме "Collections"
+        this.notFoundPages = new HashSet<>();
+        this.browserCounts = new HashMap<>();
     }
 
     public void addEntry(LogEntry entry) {
@@ -43,6 +49,12 @@ public class Statistics {
         }
         String os = entry.getAgent().getOs();
         osCounts.put(os, osCounts.getOrDefault(os, 0) + 1);
+        //Курсовой проект. Задание #2 по теме "Collections"
+        if (entry.getResponseCode() == 404){
+            notFoundPages.add(entry.getPath());
+        }
+        String browser = entry.getAgent().getBrowser();
+        browserCounts.put(browser, browserCounts.getOrDefault(browser, 0) + 1);
     }
 
     //Курсовой проект. Задание #1 по теме "Collections"
@@ -63,6 +75,25 @@ public class Statistics {
             }
         }
         return osStatistics;
+    }
+    //Курсовой проект. Задание #2 по теме "Collections"
+    public Set<String> getNotFoundPages() {
+        return new HashSet<>(notFoundPages);
+    }
+
+    public Map<String, Double> getBrowserStatistics() {
+        Map<String, Double> browserStatistics = new HashMap<>();
+        int totalCount = 0;
+        for (int count: browserCounts.values()) {
+            totalCount += count;
+        }
+        if (totalCount > 0){
+            for (Map.Entry<String, Integer> entry : browserCounts.entrySet()) {
+                double share = (double) entry.getValue() / totalCount;
+                browserStatistics.put(entry.getKey(), share);
+            }
+        }
+        return browserStatistics;
     }
 
     public double getTrafficRate() {
