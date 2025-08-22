@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.HashSet;
 import java.util.Scanner;
 
 
@@ -75,6 +76,12 @@ public class Main {
             System.out.println("Среднее количество посещений в час: " + stats.getFormattedAverageVisitsPerHour());
             System.out.println("Среднее количество ошибок в час: " + stats.getFormattedAverageErrorRequestsPerHour());
             System.out.println("Средняя посещаемость на пользователя: " + stats.getFormattedAverageVisitsPerUser());
+
+            System.out.println("--- Stream API Statistics #2 ---");
+            System.out.println("Пиковая посещаемость в секунду: " + stats.getPeakVisitsPerSecond());
+            System.out.println("Максимальная посещаемость одним пользователем: " + stats.getMaxVisitsByUser());
+            HashSet<String> refererDomains = stats.getRefererDomains();
+            System.out.println("Количество уникальных сайтов-рефереров: " + refererDomains.size());
         }
 
 

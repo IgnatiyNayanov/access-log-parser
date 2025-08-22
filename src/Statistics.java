@@ -1,6 +1,12 @@
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Statistics {
     private long totalTraffic;
@@ -61,6 +67,119 @@ public class Statistics {
         String browser = entry.getAgent().getBrowser();
         browserCounts.put(browser, browserCounts.getOrDefault(browser, 0) + 1);
     }
+
+    //Курсовой проект. Задание #2 по теме "Stream API"
+    private String extractDomain(String referer) {
+        if (referer == null || referer.isEmpty() || referer.equals("-") || referer.equals("\"-\"")) {
+            return null;
+        }
+
+        String decodeUrl;
+        try {
+            decodeUrl = URLDecoder.decode(referer, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            decodeUrl = referer;
+        }
+
+        String cleanUrl = decodeUrl.replace("\"", "").trim();
+        if (cleanUrl.isEmpty() || cleanUrl.equals("-")) {
+            return null;
+        }
+
+        try {
+            String urlWithProtocol = cleanUrl;
+            if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+                urlWithProtocol = "https://" + cleanUrl;
+            }
+            URI uri = new URI(urlWithProtocol);
+            String host = uri.getHost();
+            if (host != null) {
+                return host;
+            }
+        } catch (URISyntaxException e) {
+        }
+        return extractDomainManually(cleanUrl);
+    }
+
+    private String extractDomainManually(String url) {
+
+        String withoutProtocol = url;
+        if (url.startsWith("http://")) {
+            withoutProtocol = url.substring(7);
+        } else if (url.startsWith("https://")) {
+            withoutProtocol = url.substring(8);
+        }
+
+        int slashIndex = withoutProtocol.indexOf('/');
+        if (slashIndex != -1) {
+            withoutProtocol = withoutProtocol.substring(0, slashIndex);
+        }
+
+        int questionIndex = withoutProtocol.indexOf('?');
+        if (questionIndex != -1) {
+            withoutProtocol = withoutProtocol.substring(0, questionIndex);
+        }
+
+        int hashIndex = withoutProtocol.indexOf('#');
+        if (hashIndex != -1) {
+            withoutProtocol = withoutProtocol.substring(0, hashIndex);
+        }
+
+        int colonIndex = withoutProtocol.indexOf(':');
+        if (colonIndex != -1) {
+            withoutProtocol = withoutProtocol.substring(0, colonIndex);
+        }
+
+        if (withoutProtocol.isEmpty() ||
+                withoutProtocol.equals("-") ||
+                withoutProtocol.contains(" ") ||
+                withoutProtocol.length() > 253) {
+            return null;
+        }
+
+        return withoutProtocol;
+    }
+
+    public int getPeakVisitsPerSecond() {
+        return allEntries.stream()
+                .filter(entry -> !entry.getAgent().isBot())
+                .map(entry -> entry.getTime())
+                .filter(time -> time != null)
+                .map(time -> time.withNano(0))
+                .collect(Collectors.groupingBy(
+                        time -> time,
+                        Collectors.counting()
+                ))
+                .values().stream()
+                .mapToInt(count -> count.intValue())
+                .max()
+                .orElse(0);
+    }
+
+    public HashSet<String> getRefererDomains() {
+        return allEntries.stream()
+                .map(entry -> entry.getReferer())
+                .filter(referer -> referer != null)
+                .filter(referer -> !referer.equals("-"))
+                .filter(referer -> !referer.isEmpty())
+                .map(referer -> extractDomain(referer))
+                .filter(domain -> domain != null)
+                .filter(domain -> !domain.isEmpty())
+                .collect(Collectors.toCollection(() -> new HashSet<>()));
+    }
+
+    public int getMaxVisitsByUser() {
+        return allEntries.stream()
+                .filter(entry -> !entry.getAgent().isBot())
+                .collect(Collectors.groupingBy(
+                        entry -> entry.getIpAddr(), Collectors.counting()
+                ))
+                .values().stream()
+                .mapToInt(count -> count.intValue())
+                .max()
+                .orElse(0);
+    }
+
 
     //Курсовой проект. Задание #1 по теме "Collections"
     public Set<String> getExistingPages() {
@@ -133,7 +252,7 @@ public class Statistics {
     }
 
     //Курсовой проект. Задание #1 по теме "Stream API"
-    public double getAverageVisitsPerHour(){
+    public double getAverageVisitsPerHour() {
         if (minTime == null || maxTime == null || minTime.equals(maxTime)) {
             return 0;
         }
@@ -148,7 +267,7 @@ public class Statistics {
         return (double) nonBotCount / hoursBetween;
     }
 
-    public double getAverageErrorRequestsPerHour(){
+    public double getAverageErrorRequestsPerHour() {
         if (minTime == null || maxTime == null || minTime.equals(maxTime)) {
             return 0;
         }
@@ -163,7 +282,7 @@ public class Statistics {
         return (double) errorCount / hoursBetween;
     }
 
-    public double getAverageVisitsPerUser(){
+    public double getAverageVisitsPerUser() {
         long nonBotVisits = allEntries.stream()
                 .filter(entry -> !entry.getAgent().isBot())
                 .count();
@@ -177,13 +296,16 @@ public class Statistics {
         }
         return (double) nonBotVisits / uniqueNonBotIps;
     }
-    public String getFormattedAverageVisitsPerHour(){
+
+    public String getFormattedAverageVisitsPerHour() {
         return String.format("%,.2f", getAverageVisitsPerHour());
     }
-    public String getFormattedAverageErrorRequestsPerHour(){
+
+    public String getFormattedAverageErrorRequestsPerHour() {
         return String.format("%,.2f", getAverageErrorRequestsPerHour());
     }
-    public String getFormattedAverageVisitsPerUser(){
+
+    public String getFormattedAverageVisitsPerUser() {
         return String.format("%,.2f", getAverageVisitsPerUser());
     }
 
